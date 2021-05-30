@@ -1,9 +1,9 @@
 class Subl < Formula
   desc "Auto-opens .sublime-project files if they exist"
   homepage "http://josediazgonzalez.com"
-  url "https://raw.githubusercontent.com/josegonzalez/homebrew-repo/3a77e917f1d77c834feea041167f4e85959fc00a/bin/subl"
-  sha256 "c6325f2960b461925d316c55f9d7ee7e3ba225e17ef9af23ae8f4b2e8676ba2c"
-  version "1.0.0"
+  url "https://raw.githubusercontent.com/josegonzalez/homebrew-repo/7e284108f3168d8af62257374380e67f1b8d7d9d/bin/subl"
+  sha256 "851d073cd3469b74cfe0751bf613bf4012d3bc6523d7805909ef6c14beb4746d"
+  version "1.0.1"
 
   def install
     bin.install "subl"
