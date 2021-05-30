@@ -2,24 +2,29 @@
 [[ -n "$TRACE" ]] && set -x
 set -eo pipefail
 
-fn-desc() {
+fn-formula-desc() {
   declare desc="Inspect a function's description"
   local desc=""
   eval "$(type "$1" | grep "declare desc=" | head -1)"
   echo $desc
 }
 
-fn-validate-command-file() {
+fn-formula-log-error() {
+  declare desc="log error formatter"
+  echo "$@" 1>&2
+}
+
+fn-formula-validate-command-file() {
   declare COMMAND_FILE="$1"
 
   if [[ ! -f "${COMMAND_FILE}" ]]; then
-    fn-log-error "Invalid command '${COMMAND_FILE}'"
+    fn-formula-log-error "Invalid command '${COMMAND_FILE}'"
     return 1
   fi
 
   local shebang="$(sed -n '1s/^#!//p' "${COMMAND_FILE}")"
   if [[ "$shebang" != "/usr/bin/env bash" ]] && [[ "$shebang" != "/bin/bash" ]]; then
-    fn-log-error "Unable to detect bash shell script from file shebang"
+    fn-formula-log-error "Unable to detect bash shell script from file shebang"
     return 1
   fi
 
@@ -27,13 +32,14 @@ fn-validate-command-file() {
   self_help_check="$(grep -Fx '[[ ${BASH_SOURCE[0]} == "$0" ]] && [[ "$COMMAND_SOURCE" != "true" ]] && main "$@"' "$COMMAND_FILE" || true)"
 
   if [[ "$help_check" == "" ]] && [[ "$self_help_check" == "" ]]; then
-    fn-log-error "Script is not sourceable"
-    fn-log-error "Ensure 'main' is called as follows: [[ \"\$0\" == \"\$BASH_SOURCE\" ]] && main \"\$@\""
+    fn-formula-log-error "Script is not sourceable"
+    fn-formula-log-error "Ensure 'main' is called as follows:"
+    fn-formula-log-error "[[ \"\$0\" == \"\$BASH_SOURCE\" ]] && main \"\$@\""
     return 1
   fi
 }
 
-fn-version() {
+fn-formula-version() {
   declare desc="Inspect a function's version"
   local version=""
   eval "$(type "$1" | grep "declare version=" | head -1)"
@@ -52,11 +58,11 @@ main() {
   fi
 
   if [[ ! -f "${COMMAND_FILE}" ]]; then
-    fn-log-error "Invalid command '${COMMAND_FILE}'"
+    fn-formula-log-error "Invalid command '${COMMAND_FILE}'"
     return 1
   fi
 
-  if ! fn-validate-command-file "$COMMAND_FILE"; then
+  if ! fn-formula-validate-command-file "$COMMAND_FILE"; then
     return 1
   fi
 
@@ -65,8 +71,8 @@ main() {
 
   local SHA256="$(sha256sum $COMMAND_FILE | awk '{ print $1 }')"
   local BIN_NAME="$(basename $COMMAND_FILE)"
-  local DESCRIPTION="$(fn-desc "main")"
-  local VERSION="$(fn-version "main")"
+  local DESCRIPTION="$(fn-formula-desc "main")"
+  local VERSION="$(fn-formula-version "main")"
   local COMMIT="$(git rev-parse HEAD)"
   local arr=(${BIN_NAME//-/ })
   local FORMULA="$(printf %s "${arr[@]^}")"
@@ -90,4 +96,4 @@ end
 EOF
 }
 
-[[ ${BASH_SOURCE[0]} == "$0" ]] && [[ "$COMMAND_SOURCE" != "true" ]] && main "$@"
+[[ ${BASH_SOURCE[0]} == "$0" ]] && main "$@"

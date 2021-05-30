@@ -17,4 +17,4 @@ main() {
   "${HOME}/.virtualenvs/ec2instanceconnect/bin/mssh" --region "$REGION" "ubuntu@${INSTANCE_ID}"
 }
 
-main "$@"
+[[ ${BASH_SOURCE[0]} == "$0" ]] && main "$@"

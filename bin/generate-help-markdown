@@ -214,7 +214,8 @@ fn-help-validate-command-file() {
 
   if [[ "$help_check" == "" ]] && [[ "$self_help_check" == "" ]]; then
     fn-help-log-error "Script is not sourceable"
-    fn-help-log-error "Ensure 'main' is called as follows: [[ \"\$0\" == \"\$BASH_SOURCE\" ]] && main \"\$@\""
+    fn-help-log-error "Ensure 'main' is called as follows:"
+    fn-help-log-error "[[ \"\$0\" == \"\$BASH_SOURCE\" ]] && main \"\$@\""
     return 1
   fi
 }
