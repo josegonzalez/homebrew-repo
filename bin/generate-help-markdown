@@ -1,0 +1,261 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+fn-args() {
+  declare desc="Inspect a function's arguments"
+  local argline
+  argline=$(type "$1" | grep declare | grep -Ev "declare (desc|license|version)=" | head -1)
+  echo -e "${argline// /"\n"}" | awk -F= '/=/{print "<"$1">"}' | tr "\n" " "
+}
+
+fn-desc() {
+  declare desc="Inspect a function's description"
+  local desc=""
+  eval "$(type "$1" | grep "declare desc=" | head -1)"; echo $desc
+}
+
+fn-flags() {
+  declare desc="Inspect a function's flags"
+  local argline FN_FLAGS
+  argline=$(type "$1" | grep "declare FN_FLAGS" | head -1 | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+  eval "$argline"
+  for FN_FLAG in "${FN_FLAGS[@]}"; do
+    echo -n "[$FN_FLAG] "
+  done
+}
+
+
+fn-help-fancy-color() {
+  declare desc="A wrapper around colors"
+
+  if [[ -n "$NO_COLOR" ]] || [[ "$TERM" == "unknown" ]] || [[ "$TERM" == "dumb" ]]; then
+    return
+  fi
+
+  echo "$@"
+}
+
+fn-help-fancy-tput() {
+  declare desc="A wrapper around tput"
+
+  if [[ -n "$NO_COLOR" ]] || [[ "$TERM" == "unknown" ]] || [[ "$TERM" == "dumb" ]]; then
+    return
+  fi
+
+  tput "$@"
+}
+
+fn-help-subcommand-example() {
+  declare FILENAME="$1"
+  local COMMAND_NAME=$(basename "$FILENAME") EXAMPLE
+
+  EXAMPLE=$(cat "$FILENAME" | grep -E "\s+#E" | cut -d' ' -f2- || true)
+  if [[ -z "$EXAMPLE" ]]; then
+    return 0
+  fi
+
+  BOLD="$(fn-help-fancy-tput bold)"
+  LAST_LINE=""
+  DARK_BOLD_GRAY="$(fn-help-fancy-color "\033[1;30m")"
+  OTHER_GRAY="$(fn-help-fancy-color "\033[7;37m")"
+  NEWLINE=""
+  NORMAL="$(fn-help-fancy-color "\033[m")"
+  _fn-help-apply-shell-expansion "$EXAMPLE" | while read -r line; do
+    line="$(echo "$line" | cut -c 4-)"
+    if [[ "$line" == export* ]] || [[ "$line" == $COMMAND_NAME* ]]; then
+      [[ "$LAST_LINE" == "command" ]] && NEWLINE=""
+      [[ "$LAST_LINE" == "sentence" ]] && NEWLINE="\n"
+      echo -e "${NEWLINE}    ${DARK_BOLD_GRAY}${line}${NORMAL}"
+      LAST_LINE="command"
+    else
+      [[ "$LAST_LINE" == "command" ]] && NEWLINE="\n"
+      [[ "$LAST_LINE" == "sentence" ]] && NEWLINE=""
+      [[ "$line" == \>* ]] && line="\n    ${BOLD}${line}${NORMAL}"
+      # shellcheck disable=SC2001
+      [[ "$line" == "    "* ]] && line="    ${OTHER_GRAY}$(echo "$line" | sed -e 's/^[[:space:]]*//')${NORMAL}"
+      echo -e "${NEWLINE}${line}"
+      LAST_LINE="sentence"
+      NEWLINE="\n"
+    fi
+  done
+}
+
+fn-help-subcommand-list-args() {
+  declare FILENAME="$1"
+  local EXAMPLE LIGHT_GRAY NORMAL
+
+  local FLAGS=$(cat "$FILENAME" | grep -E "\s+#A" | cut -d'A' -f2- | sed -e 's/^[[:space:]]*//' || true)
+  if [[ -z "$FLAGS" ]]; then
+    return 0
+  fi
+
+  local BOLD="$(fn-help-fancy-tput bold)"
+  local NORMAL="$(fn-help-fancy-color "\033[m")"
+  local LIGHT_GRAY="$(fn-help-fancy-color "\033[2;37m")"
+
+  _fn-help-apply-shell-expansion "$FLAGS" | while read -r line; do
+    echo -e "    ${BOLD}$(echo "$line" | cut -d',' -f1),${NORMAL}$(echo "$line" | cut -d',' -f2-)${NORMAL}"
+  done
+}
+
+fn-help-subcommand-list-flags() {
+  declare FILENAME="$1"
+  local EXAMPLE LIGHT_GRAY NORMAL
+
+  FLAGS=$(cat "$FILENAME" | grep -E "\s+#F" | cut -d'F' -f2- | sed -e 's/^[[:space:]]*//' || true)
+  if [[ -z "$FLAGS" ]]; then
+    return 0
+  fi
+
+  NORMAL="$(fn-help-fancy-color "\033[m")"
+  LIGHT_GRAY="$(fn-help-fancy-color "\033[2;37m")"
+
+  _fn-help-apply-shell-expansion "$FLAGS" | while read -r line; do
+    echo -e "    ${BOLD}$(echo "$line" | cut -d',' -f1),${NORMAL}$(echo "$line" | cut -d',' -f2-)${NORMAL}"
+  done
+}
+
+fn-info() {
+  declare desc="Inspects a function"
+  declare FILENAME="$1" FN="$2" SHOWSOURCE="${3:-false}"
+  local BLUE="$(fn-help-fancy-color "\033[0;34m")"
+  local BOLD="$(fn-help-fancy-tput bold)"
+  local CYAN="$(fn-help-fancy-color "\033[1;36m")"
+  local NORMAL="$(fn-help-fancy-color "\033[m")"
+  local LIGHT_GRAY="$(fn-help-fancy-color "\033[2;37m")"
+  local LIGHT_RED="$(fn-help-fancy-color "\033[1;31m")"
+  local LIGHT_GREEN="$(fn-help-fancy-color "\033[1;32m")"
+  local LIGHT_PURPLE="$(fn-help-fancy-color "\033[1;35m")"
+
+
+  export COMMAND_SOURCE=true
+  source "$COMMAND_FILE" || true
+
+  local PRETTY_NAME="$(basename $FILENAME)"
+  local VERSION="$(fn-version "$FN")"
+
+  echo "# ${PRETTY_NAME}(7) ${VERSION}"
+  echo ""
+  echo "$(fn-desc "$FN")"
+  echo ""
+  echo -e "${BOLD}## usage${NORMAL}"
+  echo ""
+  echo "    $PRETTY_NAME $(fn-flags "$FN")$(fn-args "$FN")"
+  echo ""
+
+  ARGS="$(fn-help-subcommand-list-args "$FILENAME")"
+  if [[ -n "$ARGS" ]]; then
+    echo -e "${CYAN}## arguments${NORMAL}"
+    echo ""
+    echo "$ARGS" | column -c2 -t -s,
+    echo ""
+  fi
+
+  FLAGS="$(fn-help-subcommand-list-flags "$FILENAME")"
+  if [[ -n "$FLAGS" ]]; then
+    echo -e "${BLUE}## flags${NORMAL}"
+    echo ""
+    echo "$FLAGS" | column -c2 -t -s,
+    echo ""
+  fi
+
+  EXAMPLE="$(fn-help-subcommand-example "$FILENAME")"
+  if [[ -n "$EXAMPLE" ]]; then
+    echo -e "${LIGHT_RED}## examples${NORMAL}"
+    echo ""
+    echo "$EXAMPLE"
+    echo ""
+  fi
+
+  if [[ "$SHOWSOURCE" != "false" ]]; then
+    echo -e "${LIGHT_GREEN}## source${NORMAL}"
+    echo ""
+    type "$FN" | tail -n +2 | sed "s/main ()/$PRETTY_NAME ()/" | sed "s/^/    /"
+    echo ""
+  fi
+
+  LICENSE="$(fn-license "$FN")"
+  if [[ -n "$LICENSE" ]]; then
+    echo -e "${LIGHT_PURPLE}## license${NORMAL}"
+    echo ""
+    echo "$LICENSE"
+    echo ""
+  fi
+}
+
+fn-license() {
+  declare desc="Inspect a function's license"
+  local license=""
+  eval "$(type "$1" | grep "declare license=" | head -1)"; echo $license
+}
+
+fn-log-error() {
+  declare desc="log error formatter"
+  echo "$@" 1>&2
+}
+
+fn-validate-command-file() {
+  declare COMMAND_FILE="$1"
+
+  if [[ ! -f "${COMMAND_FILE}" ]]; then
+    fn-log-error "Invalid command '${COMMAND_FILE}'"
+    return 1
+  fi
+
+  local shebang="$(sed -n '1s/^#!//p' "${COMMAND_FILE}")"
+  if [[ "$shebang" != "/usr/bin/env bash" ]] && [[ "$shebang" != "/bin/bash" ]]; then
+    fn-log-error "Unable to detect bash shell script from file shebang"
+    return 1
+  fi
+
+  help_check="$(grep -Fx '[[ ${BASH_SOURCE[0]} == "$0" ]] && main "$@"' "$COMMAND_FILE" || true)"
+  self_help_check="$(grep -Fx '[[ ${BASH_SOURCE[0]} == "$0" ]] && [[ "$COMMAND_SOURCE" != "true" ]] && main "$@"' "$COMMAND_FILE" || true)"
+
+  if [[ "$help_check" == "" ]] && [[ "$self_help_check" == "" ]]; then
+    fn-log-error "Script is not sourceable"
+    fn-log-error "Ensure 'main' is called as follows: [[ \"\$0\" == \"\$BASH_SOURCE\" ]] && main \"\$@\""
+    return 1
+  fi
+}
+
+fn-version() {
+  declare desc="Inspect a function's version"
+  local version=""
+  eval "$(type "$1" | grep "declare version=" | head -1)"; echo $version
+}
+
+_fn-help-apply-shell-expansion() {
+  declare desc="Expand environment variables for a shell command"
+  declare data="$1"
+  declare delimiter="__apply_shell_expansion_delimiter__"
+  declare command="cat <<$delimiter"$'\n'"$data"$'\n'"$delimiter"
+  eval "$command"
+}
+
+main() {
+  #E generate help for the auto-retry binary
+  #E generate-help-markdown auto-retry
+  #A command, path to command to generate help for
+  declare desc="Uses reflection on scripts to show computed help output"
+  declare version="0.1.0"
+  declare license="MIT License"
+  declare COMMAND="${1?Missing command to generate help output for}" SHOW_SOURCE="${2:-false}"
+  local COMMAND_FILE="/usr/local/bin/${COMMAND}"
+
+  if [[ -f "$COMMAND" ]]; then
+    COMMAND_FILE="$COMMAND"
+  fi
+
+  if [[ ! -f "${COMMAND_FILE}" ]]; then
+    fn-log-error "Invalid command '${COMMAND_FILE}'"
+    return 1
+  fi
+
+  if ! fn-validate-command-file "$COMMAND_FILE"; then
+    return 1
+  fi
+
+  fn-info "$COMMAND_FILE" "main" "$SHOW_SOURCE"
+}
+
+[[ ${BASH_SOURCE[0]} == "$0" ]] && [[ "$COMMAND_SOURCE" != "true" ]] && main "$@"
