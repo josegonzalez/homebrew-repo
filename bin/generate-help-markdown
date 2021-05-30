@@ -1,21 +1,22 @@
 #!/usr/bin/env bash
+[[ -n "$TRACE" ]] && set -x
 set -eo pipefail
 
-fn-args() {
+fn-help-args() {
   declare desc="Inspect a function's arguments"
   local argline
   argline=$(type "$1" | grep declare | grep -Ev "declare (desc|license|version)=" | head -1)
   echo -e "${argline// /"\n"}" | awk -F= '/=/{print "<"$1">"}' | tr "\n" " "
 }
 
-fn-desc() {
+fn-help-desc() {
   declare desc="Inspect a function's description"
   local desc=""
   eval "$(type "$1" | grep "declare desc=" | head -1)"
   echo $desc
 }
 
-fn-flags() {
+fn-help-flags() {
   declare desc="Inspect a function's flags"
   local argline FN_FLAGS
   argline=$(type "$1" | grep "declare FN_FLAGS" | head -1 | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
@@ -115,7 +116,7 @@ fn-help-subcommand-list-flags() {
   done
 }
 
-fn-info() {
+fn-help-info() {
   declare desc="Inspects a function"
   declare FILENAME="$1" FN="$2" SHOWSOURCE="${3:-false}"
   local BLUE="$(fn-help-fancy-color "\033[0;34m")"
@@ -131,15 +132,15 @@ fn-info() {
   source "$COMMAND_FILE" || true
 
   local PRETTY_NAME="$(basename $FILENAME)"
-  local VERSION="$(fn-version "$FN")"
+  local VERSION="$(fn-help-version "$FN")"
 
   echo "# ${PRETTY_NAME}(7) ${VERSION}"
   echo ""
-  echo "$(fn-desc "$FN")"
+  echo "$(fn-help-desc "$FN")"
   echo ""
   echo -e "${BOLD}## usage${NORMAL}"
   echo ""
-  echo "    $PRETTY_NAME $(fn-flags "$FN")$(fn-args "$FN")"
+  echo "    $PRETTY_NAME $(fn-help-flags "$FN")$(fn-help-args "$FN")"
   echo ""
 
   ARGS="$(fn-help-subcommand-list-args "$FILENAME")"
@@ -173,7 +174,7 @@ fn-info() {
     echo ""
   fi
 
-  LICENSE="$(fn-license "$FN")"
+  LICENSE="$(fn-help-license "$FN")"
   if [[ -n "$LICENSE" ]]; then
     echo -e "${LIGHT_PURPLE}## license${NORMAL}"
     echo ""
@@ -182,29 +183,29 @@ fn-info() {
   fi
 }
 
-fn-license() {
+fn-help-license() {
   declare desc="Inspect a function's license"
   local license=""
   eval "$(type "$1" | grep "declare license=" | head -1)"
   echo $license
 }
 
-fn-log-error() {
+fn-help-log-error() {
   declare desc="log error formatter"
   echo "$@" 1>&2
 }
 
-fn-validate-command-file() {
+fn-help-validate-command-file() {
   declare COMMAND_FILE="$1"
 
   if [[ ! -f "${COMMAND_FILE}" ]]; then
-    fn-log-error "Invalid command '${COMMAND_FILE}'"
+    fn-help-log-error "Invalid command '${COMMAND_FILE}'"
     return 1
   fi
 
   local shebang="$(sed -n '1s/^#!//p' "${COMMAND_FILE}")"
   if [[ "$shebang" != "/usr/bin/env bash" ]] && [[ "$shebang" != "/bin/bash" ]]; then
-    fn-log-error "Unable to detect bash shell script from file shebang"
+    fn-help-log-error "Unable to detect bash shell script from file shebang"
     return 1
   fi
 
@@ -212,13 +213,13 @@ fn-validate-command-file() {
   self_help_check="$(grep -Fx '[[ ${BASH_SOURCE[0]} == "$0" ]] && [[ "$COMMAND_SOURCE" != "true" ]] && main "$@"' "$COMMAND_FILE" || true)"
 
   if [[ "$help_check" == "" ]] && [[ "$self_help_check" == "" ]]; then
-    fn-log-error "Script is not sourceable"
-    fn-log-error "Ensure 'main' is called as follows: [[ \"\$0\" == \"\$BASH_SOURCE\" ]] && main \"\$@\""
+    fn-help-log-error "Script is not sourceable"
+    fn-help-log-error "Ensure 'main' is called as follows: [[ \"\$0\" == \"\$BASH_SOURCE\" ]] && main \"\$@\""
     return 1
   fi
 }
 
-fn-version() {
+fn-help-version() {
   declare desc="Inspect a function's version"
   local version=""
   eval "$(type "$1" | grep "declare version=" | head -1)"
@@ -248,15 +249,15 @@ main() {
   fi
 
   if [[ ! -f "${COMMAND_FILE}" ]]; then
-    fn-log-error "Invalid command '${COMMAND_FILE}'"
+    fn-help-log-error "Invalid command '${COMMAND_FILE}'"
     return 1
   fi
 
-  if ! fn-validate-command-file "$COMMAND_FILE"; then
+  if ! fn-help-validate-command-file "$COMMAND_FILE"; then
     return 1
   fi
 
-  fn-info "$COMMAND_FILE" "main" "$SHOW_SOURCE"
+  fn-help-info "$COMMAND_FILE" "main" "$SHOW_SOURCE"
 }
 
 [[ ${BASH_SOURCE[0]} == "$0" ]] && [[ "$COMMAND_SOURCE" != "true" ]] && main "$@"
