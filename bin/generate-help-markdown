@@ -11,7 +11,8 @@ fn-args() {
 fn-desc() {
   declare desc="Inspect a function's description"
   local desc=""
-  eval "$(type "$1" | grep "declare desc=" | head -1)"; echo $desc
+  eval "$(type "$1" | grep "declare desc=" | head -1)"
+  echo $desc
 }
 
 fn-flags() {
@@ -23,7 +24,6 @@ fn-flags() {
     echo -n "[$FN_FLAG] "
   done
 }
-
 
 fn-help-fancy-color() {
   declare desc="A wrapper around colors"
@@ -127,7 +127,6 @@ fn-info() {
   local LIGHT_GREEN="$(fn-help-fancy-color "\033[1;32m")"
   local LIGHT_PURPLE="$(fn-help-fancy-color "\033[1;35m")"
 
-
   export COMMAND_SOURCE=true
   source "$COMMAND_FILE" || true
 
@@ -186,7 +185,8 @@ fn-info() {
 fn-license() {
   declare desc="Inspect a function's license"
   local license=""
-  eval "$(type "$1" | grep "declare license=" | head -1)"; echo $license
+  eval "$(type "$1" | grep "declare license=" | head -1)"
+  echo $license
 }
 
 fn-log-error() {
@@ -221,7 +221,8 @@ fn-validate-command-file() {
 fn-version() {
   declare desc="Inspect a function's version"
   local version=""
-  eval "$(type "$1" | grep "declare version=" | head -1)"; echo $version
+  eval "$(type "$1" | grep "declare version=" | head -1)"
+  echo $version
 }
 
 _fn-help-apply-shell-expansion() {
