@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+main() {
+    declare desc="Automatically retries - with exponential backoff - a given command until it exits 0"
+    declare license="MIT"
+    declare version="1.0.0"
+    declare COMMAND="${1?Missing command to retry}"
+    let backoff=1
+
+    false
+    while [[ $? -ne 0 ]]; do
+        "$@" || (sleep $((backoff*=2));false)
+    done
+}
+
+[[ ${BASH_SOURCE[0]} == "$0" ]] && [[ "$COMMAND_SOURCE" != "true" ]] && main "$@"
