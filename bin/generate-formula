@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+[[ -n "$TRACE" ]] && set -x
 set -eo pipefail
 
 fn-desc() {

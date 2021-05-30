@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+[[ -n "$TRACE" ]] && set -x
+set -eo pipefail
 
 main() {
   declare desc="Automatically retries - with exponential backoff - a given command until it exits 0"
