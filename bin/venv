@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+[[ -n "$TRACE" ]] && set -x
+set -eo pipefail
+
+main() {
+  declare desc="Creates a virtualenv and installs dependencies in requirements.txt"
+  declare license="MIT"
+  declare version="1.0.0"
+  declare VIRTUALENV_NAME="$1"
+
+  if [[ -z "$VIRTUALENV_NAME" ]]; then
+    echo "Missing virtualenv name"
+    return 1
+  fi
+
+  if [[ -n "$VIRTUAL_ENV" ]]; then
+    deactivate
+  fi
+
+  if [[ ! -d "$HOME/.virtualenvs/$VIRTUALENV_NAME" ]]; then
+    echo "Creating ${VIRTUALENV_NAME} virtualenv"
+    virtualenv "$HOME/.virtualenvs/$VIRTUALENV_NAME"
+  fi
+
+  source "$HOME/.virtualenvs/$VIRTUALENV_NAME/bin/activate"
+
+  if [[ ! -f requirements.txt ]]; then
+    return
+  fi
+
+  local input
+  read -p "Found a requirements.txt. Install? [y/N]" input
+  if [[ "$input" != "y" ]] && [[ "$input" != "Y" ]]; then
+    return
+  fi
+
+  "$HOME/.virtualenvs/$VIRTUALENV_NAME/bin/pip" install -r requirements.txt
+}
+
+main "$@"

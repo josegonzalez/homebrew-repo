@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+[[ -n "$TRACE" ]] && set -x
+set -eo pipefail
+
+main() {
+  declare desc="Delete all branches other than main, master, and release"
+  declare license="MIT"
+  declare version="1.0.0"
+  declare FORCE="$1"
+
+  if [[ "$FORCE" == "--force" ]] || [[ "$FORCE" == "-f" ]]; then
+    git branch | grep -v "main\|master\|release" | grep -v ^* | xargs git branch -D
+  else
+    git branch | grep -v "main\|master\|release" | grep -v ^* | xargs git branch -d
+  fi
+}
+
+main "$@"

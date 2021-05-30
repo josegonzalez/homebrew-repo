@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+[[ -n "$TRACE" ]] && set -x
+set -eo pipefail
+
+main() {
+  declare desc="Auto-opens .sublime-project files if they exist"
+  declare license="MIT"
+  declare version="1.0.0"
+
+  SUBL=/usr/local/bin/subl
+  owd=$(pwd)
+  wd=$owd
+  args=($@)
+
+  if [[ "${#args[@]}" == 0 ]]; then
+    args=(.)
+  elif [[ "${#args[@]}" == 1 ]]; then
+    true
+  else
+    $SUBL "$@"
+    return
+  fi
+
+  if [ -d "${args[0]}" ]; then
+    wd=$(realpath "${args[0]}")
+  elif [ -s "${args[0]}" ]; then
+    $SUBL $@
+    return
+  fi
+
+  pushd $wd >/dev/null 2>&1
+  count=$(ls -1 *.sublime-project 2>/dev/null | wc -l | xargs || true)
+  if [[ "$count" != 0 ]]; then
+    $SUBL ${args[@]:0:${#args[0]}-1} $(ls -1d *.sublime-project | head -n1)
+  else
+    $SUBL $@
+  fi
+
+  if [ "$owd" != "$(pwd)" ]; then
+    popd >/dev/null 2>&1
+  fi
+}
+
+main "$@"

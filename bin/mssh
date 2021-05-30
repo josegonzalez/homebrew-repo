@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+[[ -n "$TRACE" ]] && set -x
+set -eo pipefail
+
+main() {
+  declare desc="Wraps virtualenv mssh so that it is easier to use for ubuntu servers"
+  declare license="MIT"
+  declare version="1.0.0"
+  declare INSTANCE_ID="$1"
+  source "${HOME}/.virtualenvs/ec2instanceconnect/bin/activate"
+
+  REGION="$AWS_REGION"
+  if [[ -z "$REGION" ]]; then
+    REGION=us-east-1
+  fi
+
+  "${HOME}/.virtualenvs/ec2instanceconnect/bin/mssh" --region "$REGION" "ubuntu@${INSTANCE_ID}"
+}
+
+main "$@"

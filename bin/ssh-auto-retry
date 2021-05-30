@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+[[ -n "$TRACE" ]] && set -x
+set -eo pipefail
+
+main() {
+  declare desc="Auto retries connecting to a server until it is ready"
+  declare license="MIT"
+  declare version="1.0.0"
+
+  auto-retry ssh "$@"
+}
+
+main "$@"

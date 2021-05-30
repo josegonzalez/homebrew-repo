@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+[[ -n "$TRACE" ]] && set -x
+set -eo pipefail
+
+main() {
+  declare desc="Pushes all branches beginning with the current year"
+  declare license="MIT"
+  declare version="1.0.0"
+
+  local current_year="$(date +"%Y")"
+
+  for branch in $(git branch | grep -v master); do
+    branch="$(echo $branch | xargs)"
+    if echo $branch | grep -q ^$current_year; then
+      git push -f origin $branch
+    fi
+  done
+}
+
+main "$@"
