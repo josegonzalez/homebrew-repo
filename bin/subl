@@ -5,9 +5,9 @@ set -eo pipefail
 main() {
   declare desc="Auto-opens .sublime-project files if they exist"
   declare license="MIT"
-  declare version="1.0.0"
+  declare version="1.0.1"
 
-  SUBL=/usr/local/bin/subl
+  SUBL="/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl"
   owd=$(pwd)
   wd=$owd
   args=($@)
