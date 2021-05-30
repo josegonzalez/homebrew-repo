@@ -5,7 +5,7 @@ set -eo pipefail
 main() {
   declare desc="Auto-opens .sublime-project files if they exist"
   declare license="MIT"
-  declare version="1.0.1"
+  declare version="1.0.2"
 
   SUBL="/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl"
   owd=$(pwd)
@@ -17,23 +17,23 @@ main() {
   elif [[ "${#args[@]}" == 1 ]]; then
     true
   else
-    $SUBL "$@"
+    "$SUBL" "$@"
     return
   fi
 
   if [ -d "${args[0]}" ]; then
     wd=$(realpath "${args[0]}")
   elif [ -s "${args[0]}" ]; then
-    $SUBL $@
+    "$SUBL" $@
     return
   fi
 
   pushd $wd >/dev/null 2>&1
   count=$(ls -1 *.sublime-project 2>/dev/null | wc -l | xargs || true)
   if [[ "$count" != 0 ]]; then
-    $SUBL ${args[@]:0:${#args[0]}-1} $(ls -1d *.sublime-project | head -n1)
+    "$SUBL" ${args[@]:0:${#args[0]}-1} $(ls -1d *.sublime-project | head -n1)
   else
-    $SUBL $@
+    "$SUBL" $@
   fi
 
   if [ "$owd" != "$(pwd)" ]; then
