@@ -9,7 +9,6 @@ main() {
   declare COMMAND="${1?Missing command to retry}"
   let backoff=1
 
-  false
   while [[ $? -ne 0 ]]; do
     "$@" || (
       sleep $((backoff *= 2))
