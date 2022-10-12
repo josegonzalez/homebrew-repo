@@ -51,7 +51,7 @@ main() {
   declare version="0.0.2"
   declare license="MIT License"
   declare COMMAND="${1?Missing command to generate help output for}" SHOW_SOURCE="${2:-false}"
-  local COMMAND_FILE="/usr/local/bin/${COMMAND}"
+  local COMMAND_FILE="/opt/homebrew/bin/${COMMAND}"
 
   if [[ -f "$COMMAND" ]]; then
     COMMAND_FILE="$PWD/$COMMAND"
