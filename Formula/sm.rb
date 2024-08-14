@@ -9,7 +9,7 @@ class Sm < Formula
   depends_on "go" => :build
 
   def install
-    ldflags = "-s -w -X github.com/josegonzalez/sm/main.Version=#{version}"
+    ldflags = "-s -w -X main.Version=#{version}"
     system "go", "build", *std_go_args(ldflags:)
   end
 
