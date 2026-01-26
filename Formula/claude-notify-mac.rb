@@ -1,4 +1,4 @@
-class claudenotifymac < Formula
+class ClaudeNotifyMac < Formula
   desc "Displays notifications for Claude Code via AppleScript"
   homepage "http://josediazgonzalez.com"
   url "https://raw.githubusercontent.com/josegonzalez/homebrew-repo/7e1e14875ea6792afcbc2cb728e34d59c74e4b37/bin/claude-notify-mac"
