@@ -15,7 +15,11 @@ class Sm < Formula
   end
 
   def install
-    bin.install "sm"
+    if Hardware::CPU.arm?
+      bin.install "sm-arm64" => "sm"
+    else
+      bin.install "sm-amd64" => "sm"
+    end
   end
 
   test do

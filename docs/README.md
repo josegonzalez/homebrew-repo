@@ -85,3 +85,15 @@ To uninstall:
 ```bash
 brew uninstall <formula>
 ```
+
+## Testing
+
+Formula installations are automatically tested via GitHub Actions on every push to `main` and on pull requests.
+
+The CI workflow:
+1. Discovers all formulas in the `Formula/` directory
+2. Registers the checked-out repository as a Homebrew tap
+3. Installs each formula via `brew install josegonzalez/repo/<formula>`
+4. Verifies successful installation with `brew list`
+
+This tests the tap-based installation path (not local development) to ensure formulas work correctly for end users.
