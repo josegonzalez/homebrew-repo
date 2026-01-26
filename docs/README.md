@@ -41,8 +41,11 @@ brew install josegonzalez/repo/<formula>
 
 ### External Projects
 
+- **avahi-register** - Register services with Avahi/Bonjour for network discovery
 - **claude-worktree** - Manage git worktrees with Claude Code integration
+- **minui-map-txt-creator** - Generate MinUI mapping files from FinalBurn Neo dat XML files
 - **sm** - Secret management tool (separate Go project)
+- **sshd-config** - CLI tool for manipulating SSH daemon configuration files
 
 ## Adding New Tools
 
@@ -108,6 +111,7 @@ External binary formulas (like `sm` and `claude-worktree`) are automatically che
 3. Creates a pull request with the updated formula
 
 To add a new external binary formula to auto-updates, ensure:
+
 - The formula has `on_arm do` and `on_intel do` blocks
 - The `homepage` points to the GitHub repository (e.g., `https://github.com/owner/repo`)
 - URL patterns follow consistent naming with version numbers
