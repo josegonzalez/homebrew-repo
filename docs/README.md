@@ -98,3 +98,18 @@ The CI workflow:
 4. Verifies successful installation with `brew list`
 
 This tests the tap-based installation path (not local development) to ensure formulas work correctly for end users.
+
+## Automatic Formula Updates
+
+External binary formulas (like `sm` and `claude-worktree`) are automatically checked for updates daily. When a new release is detected:
+
+1. The workflow downloads the new release assets
+2. Computes SHA256 checksums for both arm64 and amd64 binaries
+3. Creates a pull request with the updated formula
+
+To add a new external binary formula to auto-updates, ensure:
+- The formula has `on_arm do` and `on_intel do` blocks
+- The `homepage` points to the GitHub repository (e.g., `https://github.com/owner/repo`)
+- URL patterns follow consistent naming with version numbers
+
+The workflow can also be triggered manually from the Actions tab.

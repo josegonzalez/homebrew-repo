@@ -1,0 +1,206 @@
+name: Update External Binary Formulas
+
+on:
+  schedule:
+    - cron: "0 8 * * *" # Daily at 8am UTC
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  detect-formulas:
+    runs-on: ubuntu-latest
+    outputs:
+      formulas: ${{ steps.detect.outputs.formulas }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Detect external binary formulas
+        id: detect
+        run: |
+          # Find formulas with on_arm blocks (external binary formulas)
+          formulas=$(grep -l "on_arm do" Formula/*.rb | xargs -n1 basename | sed 's/\.rb$//' | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "formulas=$formulas" >> "$GITHUB_OUTPUT"
+          echo "Detected external binary formulas: $formulas"
+
+  check-updates:
+    needs: detect-formulas
+    if: needs.detect-formulas.outputs.formulas != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        formula: ${{ fromJson(needs.detect-formulas.outputs.formulas) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Check for updates
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          formula_file="Formula/${{ matrix.formula }}.rb"
+          echo "Checking $formula_file for updates..."
+
+          # Extract current version from formula
+          current_version=$(grep -E '^\s*version\s+"' "$formula_file" | sed -E 's/.*version\s+"([^"]+)".*/\1/')
+          echo "Current version: $current_version"
+
+          # Extract GitHub repo from homepage
+          homepage=$(grep -E '^\s*homepage\s+"' "$formula_file" | sed -E 's/.*homepage\s+"([^"]+)".*/\1/')
+          echo "Homepage: $homepage"
+
+          # Parse owner/repo from homepage
+          repo_path=$(echo "$homepage" | sed -E 's|https://github.com/||')
+          echo "Repo path: $repo_path"
+
+          # Get latest release from GitHub API
+          latest_release=$(gh api "repos/$repo_path/releases/latest" --jq '.tag_name')
+          echo "Latest release tag: $latest_release"
+
+          # Determine if tag uses 'v' prefix by checking existing URL
+          arm_url=$(grep -A1 "on_arm do" "$formula_file" | grep "url" | sed -E 's/.*url\s+"([^"]+)".*/\1/')
+          echo "Current ARM URL: $arm_url"
+
+          # Check if URL contains 'v' prefix before version
+          if echo "$arm_url" | grep -qE "/v[0-9]"; then
+            uses_v_prefix=true
+            latest_version="${latest_release#v}"
+          else
+            uses_v_prefix=false
+            latest_version="$latest_release"
+          fi
+          echo "Uses v prefix: $uses_v_prefix"
+          echo "Latest version (stripped): $latest_version"
+
+          # Compare versions
+          if [ "$current_version" = "$latest_version" ]; then
+            echo "Formula is up to date"
+            echo "needs_update=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Update available: $current_version -> $latest_version"
+          echo "needs_update=true" >> "$GITHUB_OUTPUT"
+          echo "current_version=$current_version" >> "$GITHUB_OUTPUT"
+          echo "latest_version=$latest_version" >> "$GITHUB_OUTPUT"
+          echo "latest_tag=$latest_release" >> "$GITHUB_OUTPUT"
+          echo "repo_path=$repo_path" >> "$GITHUB_OUTPUT"
+          echo "uses_v_prefix=$uses_v_prefix" >> "$GITHUB_OUTPUT"
+
+      - name: Update formula
+        if: steps.check.outputs.needs_update == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          formula_file="Formula/${{ matrix.formula }}.rb"
+          current_version="${{ steps.check.outputs.current_version }}"
+          latest_version="${{ steps.check.outputs.latest_version }}"
+          latest_tag="${{ steps.check.outputs.latest_tag }}"
+          repo_path="${{ steps.check.outputs.repo_path }}"
+
+          echo "Updating $formula_file from $current_version to $latest_version"
+
+          # Extract current URLs to determine patterns
+          arm_url=$(grep -A1 "on_arm do" "$formula_file" | grep "url" | sed -E 's/.*url\s+"([^"]+)".*/\1/')
+          intel_url=$(grep -A1 "on_intel do" "$formula_file" | grep "url" | sed -E 's/.*url\s+"([^"]+)".*/\1/')
+
+          echo "Current ARM URL: $arm_url"
+          echo "Current Intel URL: $intel_url"
+
+          # Generate new URLs by replacing version in existing URLs
+          new_arm_url=$(echo "$arm_url" | sed "s/$current_version/$latest_version/g")
+          new_intel_url=$(echo "$intel_url" | sed "s/$current_version/$latest_version/g")
+
+          # Handle tag version (may have v prefix)
+          current_tag_version="$current_version"
+          if [ "${{ steps.check.outputs.uses_v_prefix }}" = "true" ]; then
+            current_tag_version="v$current_version"
+          fi
+          new_arm_url=$(echo "$new_arm_url" | sed "s|/download/$current_tag_version/|/download/$latest_tag/|g")
+          new_intel_url=$(echo "$new_intel_url" | sed "s|/download/$current_tag_version/|/download/$latest_tag/|g")
+
+          echo "New ARM URL: $new_arm_url"
+          echo "New Intel URL: $new_intel_url"
+
+          # Download and compute SHA256
+          echo "Downloading ARM binary..."
+          curl -fsSL "$new_arm_url" -o arm_binary
+          arm_sha256=$(shasum -a 256 arm_binary | cut -d' ' -f1)
+          echo "ARM SHA256: $arm_sha256"
+
+          echo "Downloading Intel binary..."
+          curl -fsSL "$new_intel_url" -o intel_binary
+          intel_sha256=$(shasum -a 256 intel_binary | cut -d' ' -f1)
+          echo "Intel SHA256: $intel_sha256"
+
+          # Verify we didn't get empty files
+          empty_sha256="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          if [ "$arm_sha256" = "$empty_sha256" ] || [ "$intel_sha256" = "$empty_sha256" ]; then
+            echo "Error: Downloaded empty file. Release assets may not be ready."
+            exit 1
+          fi
+
+          # Update the formula file
+          # Update version
+          sed -i "s/version \"$current_version\"/version \"$latest_version\"/" "$formula_file"
+
+          # Update ARM URL and SHA256
+          sed -i "s|url \"$arm_url\"|url \"$new_arm_url\"|" "$formula_file"
+          old_arm_sha=$(grep -A2 "on_arm do" "$formula_file" | grep "sha256" | sed -E 's/.*sha256\s+"([^"]+)".*/\1/')
+          sed -i "s/sha256 \"$old_arm_sha\"/sha256 \"$arm_sha256\"/" "$formula_file"
+
+          # Update Intel URL and SHA256
+          sed -i "s|url \"$intel_url\"|url \"$new_intel_url\"|" "$formula_file"
+          old_intel_sha=$(grep -A2 "on_intel do" "$formula_file" | grep "sha256" | sed -E 's/.*sha256\s+"([^"]+)".*/\1/')
+          sed -i "s/sha256 \"$old_intel_sha\"/sha256 \"$intel_sha256\"/" "$formula_file"
+
+          echo "Updated formula:"
+          cat "$formula_file"
+
+      - name: Create Pull Request
+        if: steps.check.outputs.needs_update == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          formula="${{ matrix.formula }}"
+          current_version="${{ steps.check.outputs.current_version }}"
+          latest_version="${{ steps.check.outputs.latest_version }}"
+          repo_path="${{ steps.check.outputs.repo_path }}"
+
+          branch_name="homebrew/Formula/${formula}/${latest_version}"
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Check if branch already exists remotely
+          if git ls-remote --exit-code --heads origin "$branch_name" >/dev/null 2>&1; then
+            echo "Branch $branch_name already exists, skipping PR creation"
+            exit 0
+          fi
+
+          # Create branch and commit
+          git checkout -b "$branch_name"
+          git add "Formula/${formula}.rb"
+          git commit -m "chore: bump ${formula} from ${current_version} to ${latest_version}"
+
+          # Push branch
+          git push origin "$branch_name"
+
+          # Create PR
+          release_url="https://github.com/${repo_path}/releases/tag/${{ steps.check.outputs.latest_tag }}"
+          pr_body="Bumps [${formula}](https://github.com/${repo_path}) from ${current_version} to ${latest_version}.
+
+          **Release notes**
+          > ${release_url}"
+
+          gh pr create \
+            --title "chore: bump ${formula} from ${current_version} to ${latest_version}" \
+            --body "$pr_body" \
+            --base main \
+            --head "$branch_name"
