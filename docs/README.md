@@ -41,6 +41,7 @@ brew install josegonzalez/repo/<formula>
 
 ### External Projects
 
+- **claude-worktree** - Manage git worktrees with Claude Code integration
 - **sm** - Secret management tool (separate Go project)
 
 ## Adding New Tools
