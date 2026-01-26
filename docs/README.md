@@ -57,7 +57,7 @@ brew install josegonzalez/repo/<formula>
 2. Run `generate-formula` to create the Homebrew formula:
 
    ```bash
-   generate-formula bin/your-script
+   generate-formula bin/your-script >Formula/your-script.rb
    ```
 
 3. Test the installation locally:
@@ -91,6 +91,7 @@ brew uninstall <formula>
 Formula installations are automatically tested via GitHub Actions on every push to `main` and on pull requests.
 
 The CI workflow:
+
 1. Discovers all formulas in the `Formula/` directory
 2. Registers the checked-out repository as a Homebrew tap
 3. Installs each formula via `brew install josegonzalez/repo/<formula>`

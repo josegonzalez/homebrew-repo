@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+[[ -n "$TRACE" ]] && set -x
+set -eo pipefail
+
+mac-osascript-wrapper() {
+  declare SCRIPT="$1"
+  if [ -f /etc/os-release ]; then
+    mac osascript -e "$SCRIPT"
+  else
+    osascript -e "$SCRIPT"
+  fi
+}
+
+send-notification() {
+  declare MESSAGE="$1" TITLE="$2" SUBTITLE="$3" SOUND="$4"
+
+  if [ -z "$SUBTITLE" ]; then
+    mac-osascript-wrapper "display notification \"$MESSAGE\" with title \"$TITLE\" sound name \"$SOUND\""
+  else
+    mac-osascript-wrapper "display notification \"$MESSAGE\" with title \"$TITLE\" subtitle \"$SUBTITLE\" sound name \"$SOUND\""
+  fi
+}
+
+fn-notification-display() {
+  declare MESSAGE_TYPE="$1" CLAUDE_INPUT="$2"
+  local MESSAGE
+
+  if [ "$MESSAGE_TYPE" != "Notification" ]; then
+    return 0
+  fi
+
+  MESSAGE=$(echo "$CLAUDE_INPUT" | jq -r '.message')
+
+  send-notification "$MESSAGE" "Claude Code" "" "Glass"
+}
+
+fn-question-display() {
+  declare MESSAGE_TYPE="$1" CLAUDE_INPUT="$2"
+  local MESSAGE_SUBTITLE QUESTION QUESTIONS_COUNT TOOL_NAME
+
+  if [ "$MESSAGE_TYPE" != "PermissionRequest" ]; then
+    return 0
+  fi
+
+  TOOL_NAME=$(echo "$CLAUDE_INPUT" | jq -r '.tool_name')
+  if [ "$TOOL_NAME" = "PostToolUse" ]; then
+    return 0
+  fi
+
+  if [ "$TOOL_NAME" != "AskUserQuestion" ]; then
+    return 0
+  fi
+
+  QUESTION=$(echo "$CLAUDE_INPUT" | jq -r '.tool_input.questions[].question' | head -n 1 | paste -sd '\n' -)
+  echo "QUESTION: $QUESTION"
+  QUESTIONS_COUNT=$(echo "$CLAUDE_INPUT" | jq -r '.tool_input.questions | length')
+  echo "QUESTIONS_COUNT: $QUESTIONS_COUNT"
+
+  MESSAGE_SUBTITLE="Claude Code has one question"
+  if [ "$QUESTIONS_COUNT" -ge 2 ]; then
+    MESSAGE_SUBTITLE="Claude Code has ${QUESTIONS_COUNT} questions"
+  fi
+
+  send-notification "First question: $QUESTION" "Claude Code" "$MESSAGE_SUBTITLE" "Glass"
+}
+
+fn-stop-display() {
+  declare MESSAGE_TYPE="$1" CLAUDE_INPUT="$2"
+
+  if [ "$MESSAGE_TYPE" != "Stop" ]; then
+    return 0
+  fi
+
+  send-notification "The main Claude Code agent has stopped." "Claude Code" "" "Glass"
+}
+
+main() {
+  declare desc="Displays notifications for Claude Code via AppleScript"
+  declare license="MIT"
+  declare version="1.0.0"
+  declare MESSAGE_TYPE="$1"
+
+  CLAUDE_INPUT=$(cat -)
+
+  fn-question-display "$MESSAGE_TYPE" "$CLAUDE_INPUT"
+  fn-notification-display "$MESSAGE_TYPE" "$CLAUDE_INPUT"
+  fn-stop-display "$MESSAGE_TYPE" "$CLAUDE_INPUT"
+}
+
+[[ ${BASH_SOURCE[0]} == "$0" ]] && main "$@"
