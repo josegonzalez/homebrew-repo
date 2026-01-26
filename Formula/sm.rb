@@ -1,16 +1,21 @@
 class Sm < Formula
   desc "Simple secret management tool for server configuration"
   homepage "https://github.com/josegonzalez/sm"
-  url "https://github.com/josegonzalez/sm/archive/refs/tags/v0.16.0.tar.gz"
-  sha256 "158d6e872cb7e927616792393d8ef870fdf76b629986741b43e4de04c91166db"
   license "MIT"
-  head "https://github.com/josegonzalez/sm.git", branch: "master"
+  version "0.16.0"
 
-  depends_on "go" => :build
+  on_arm do
+    url "https://github.com/josegonzalez/sm/releases/download/v0.16.0/sm_0.16.0_darwin_arm64.tgz"
+    sha256 "48caeb318b9fa8c7c3d89f92cab90d805ddb3b9bc207c08126e5ce9aa7ae2152"
+  end
+
+  on_intel do
+    url "https://github.com/josegonzalez/sm/releases/download/v0.16.0/sm_0.16.0_darwin_amd64.tgz"
+    sha256 "eccfd3beafd625abef0494fb60520949b5aa2bb071e8a1e2846ddd231ada8454"
+  end
 
   def install
-    ldflags = "-s -w -X main.Version=#{version}"
-    system "go", "build", *std_go_args(ldflags:)
+    bin.install "sm"
   end
 
   test do

@@ -65,3 +65,23 @@ brew install josegonzalez/repo/<formula>
    ```bash
    brew install --build-from-source ./Formula/your-script.rb
    ```
+
+## Local Development
+
+To install a formula locally for testing:
+
+```bash
+HOMEBREW_DEVELOPER="true" brew install ./Formula/<formula>.rb
+```
+
+To reinstall after making changes:
+
+```bash
+HOMEBREW_DEVELOPER="true" brew reinstall ./Formula/<formula>.rb
+```
+
+To uninstall:
+
+```bash
+brew uninstall <formula>
+```
