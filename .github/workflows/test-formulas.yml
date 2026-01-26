@@ -13,7 +13,7 @@ jobs:
       formulas: ${{ steps.list.outputs.formulas }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: List formulas
         id: list
@@ -30,7 +30,7 @@ jobs:
         formula: ${{ fromJson(needs.list-formulas.outputs.formulas) }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up local tap
         run: |
