@@ -43,6 +43,7 @@ brew install josegonzalez/repo/<formula>
 
 - **avahi-register** - Register services with Avahi/Bonjour for network discovery
 - **claude-worktree** - Manage git worktrees with Claude Code integration
+- **docker-run-export** - Export docker run flags to various formats
 - **minui-map-txt-creator** - Generate MinUI mapping files from FinalBurn Neo dat XML files
 - **sm** - Secret management tool (separate Go project)
 - **sshd-config** - CLI tool for manipulating SSH daemon configuration files

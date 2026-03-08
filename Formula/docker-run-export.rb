@@ -1,0 +1,28 @@
+class DockerRunExport < Formula
+  desc "Export docker run flags to various formats"
+  homepage "https://github.com/dokku/docker-run-export"
+  license "MIT"
+  version "0.4.0"
+
+  on_arm do
+    url "https://github.com/dokku/docker-run-export/releases/download/v0.4.0/docker-run-export-darwin-arm64"
+    sha256 "e00cbfd8dddf4ce97bc517d2d1cc9d8153f037ca3f52b7345d83749b9b2828b9"
+  end
+
+  on_intel do
+    url "https://github.com/dokku/docker-run-export/releases/download/v0.4.0/docker-run-export-darwin-amd64"
+    sha256 "f518def66e95c96083c6121c1dd876c9c3899917fac718ea7104c03eeabb26ae"
+  end
+
+  def install
+    if Hardware::CPU.arm?
+      bin.install "docker-run-export-darwin-arm64" => "docker-run-export"
+    else
+      bin.install "docker-run-export-darwin-amd64" => "docker-run-export"
+    end
+  end
+
+  test do
+    assert_match version.to_s, shell_output("#{bin}/docker-run-export --version")
+  end
+end
