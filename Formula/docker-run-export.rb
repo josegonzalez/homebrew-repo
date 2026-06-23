@@ -2,16 +2,16 @@ class DockerRunExport < Formula
   desc "Export docker run flags to various formats"
   homepage "https://github.com/dokku/docker-run-export"
   license "MIT"
-  version "0.4.0"
+  version "0.5.0"
 
   on_arm do
-    url "https://github.com/dokku/docker-run-export/releases/download/v0.4.0/docker-run-export-darwin-arm64"
-    sha256 "e00cbfd8dddf4ce97bc517d2d1cc9d8153f037ca3f52b7345d83749b9b2828b9"
+    url "https://github.com/dokku/docker-run-export/releases/download/v0.5.0/docker-run-export-darwin-arm64"
+    sha256 "716fd67c31c019a167c2316b5019c57b5d5718014859f96d95f55043a4765db0"
   end
 
   on_intel do
-    url "https://github.com/dokku/docker-run-export/releases/download/v0.4.0/docker-run-export-darwin-amd64"
-    sha256 "f518def66e95c96083c6121c1dd876c9c3899917fac718ea7104c03eeabb26ae"
+    url "https://github.com/dokku/docker-run-export/releases/download/v0.5.0/docker-run-export-darwin-amd64"
+    sha256 "26673500135dbabffa438d462d51258a273ba796c110712390eb5a57c10f8f81"
   end
 
   def install
