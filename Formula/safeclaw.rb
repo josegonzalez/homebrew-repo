@@ -2,16 +2,16 @@ class Safeclaw < Formula
   desc "Run Claude Code sessions in isolated Docker containers with a web dashboard"
   homepage "https://github.com/josegonzalez/safeclaw"
   license "MIT"
-  version "0.3.0"
+  version "0.4.0"
 
   on_arm do
-    url "https://github.com/josegonzalez/safeclaw/releases/download/v0.3.0/safeclaw_0.3.0_darwin_arm64.tar.gz"
-    sha256 "a1d5e327b64d425d6ba5f6a1fe31da812f68bf53c6cac3ce6488332fa99b0075"
+    url "https://github.com/josegonzalez/safeclaw/releases/download/v0.4.0/safeclaw_0.4.0_darwin_arm64.tar.gz"
+    sha256 "c7756f95f84ed0aa6e91dc880ac2549d23a3d4108c26fa53cc06615cc46e1535"
   end
 
   on_intel do
-    url "https://github.com/josegonzalez/safeclaw/releases/download/v0.3.0/safeclaw_0.3.0_darwin_amd64.tar.gz"
-    sha256 "d16cdbe0cee38ad61c2f256f80205141300aeab1d088876cf400b041bd316d39"
+    url "https://github.com/josegonzalez/safeclaw/releases/download/v0.4.0/safeclaw_0.4.0_darwin_amd64.tar.gz"
+    sha256 "f2322929105f59c575d594f75bc6cc9964412882d3c1148e19a185ddbcef9cef"
   end
 
   def install
